@@ -8,7 +8,7 @@ import pandas as pd
 
 app = FastAPI()
 
-# AJUSTE DE CORS: allow_credentials deve ser False quando usamos origins=["*"]
+# Configuração de CORS para permitir que a Vercel acesse o Render
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +18,6 @@ app.add_middleware(
 )
 
 def conectar_banco():
-    # AJUSTADO: Agora apontando para 'marketing_db' para bater com seu script SQL
     return mysql.connector.connect(
         host="mysql-1f716a77-joaquimwisnieski55-bba5.g.aivencloud.com",
         port=23046,
@@ -41,12 +40,19 @@ def buscar_metricas():
         cursor.execute("SELECT SUM(qtd_leads) as leads, SUM(qtd_vendas) as vendas FROM metricas")
         res = cursor.fetchone()
         conexao.close()
-        if not res or res['leads'] is None:
+        
+        # Garante que leads e vendas sejam números, mesmo que o banco esteja vazio
+        leads = int(res['leads']) if res and res['leads'] is not None else 0
+        vendas = int(res['vendas']) if res and res['vendas'] is not None else 0
+        
+        if leads == 0:
             return {"leads": 0, "vendas": 0, "conversao": 0}
-        conv = round((res['vendas'] / res['leads']) * 100, 1)
-        return {"leads": res['leads'], "vendas": res['vendas'], "conversao": conv}
+            
+        conv = round((vendas / leads) * 100, 1)
+        return {"leads": leads, "vendas": vendas, "conversao": float(conv)}
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Erro ao buscar: {e}")
+        return {"leads": 0, "vendas": 0, "conversao": 0}
 
 @app.post("/salvar-metricas")
 def salvar_metricas(dados: Metricas):
@@ -60,7 +66,8 @@ def salvar_metricas(dados: Metricas):
         conexao.close()
         return {"status": "Sucesso"}
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Erro ao salvar: {e}")
+        return {"status": "Erro", "message": str(e)}
 
 @app.get("/predicao-15-dias")
 def calcular_predicao():
@@ -68,13 +75,15 @@ def calcular_predicao():
         conexao = conectar_banco()
         df = pd.read_sql("SELECT qtd_leads, qtd_vendas FROM metricas ORDER BY id DESC LIMIT 15", conexao)
         conexao.close()
+        
         if len(df) < 3:
             return {"status": "Aguardando", "proximo_ciclo": {"leads_estimados": 0, "vendas_estimadas": 0}}
+            
         leads_est = int(df['qtd_leads'].mean() * 15)
         vendas_est = int(df['qtd_vendas'].mean() * 15)
         return {"status": "Sucesso", "proximo_ciclo": {"leads_estimados": leads_est, "vendas_estimadas": vendas_est}}
     except Exception as e:
-        return {"error": str(e)}
+        return {"status": "Erro", "proximo_ciclo": {"leads_estimados": 0, "vendas_estimadas": 0}}
 
 @app.get("/exportar-dados")
 def exportar_dados():
@@ -98,4 +107,4 @@ def deletar_ultimo():
         conexao.close()
         return {"status": "Registro removido com sucesso"}
     except Exception as e:
-        return {"error": str(e)}
+        return {"status": "Erro", "message": str(e)}
