@@ -8,7 +8,7 @@ import pandas as pd
 
 app = FastAPI()
 
-# Configuração de CORS para permitir que a Vercel acesse o Render
+# Configuração de CORS: Permite que seu site na Vercel fale com este servidor
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 def conectar_banco():
+    # Conexão centralizada usando as credenciais da Aiven e o cofre do Render
     return mysql.connector.connect(
         host="mysql-1f716a77-joaquimwisnieski55-bba5.g.aivencloud.com",
         port=23046,
@@ -41,7 +42,7 @@ def buscar_metricas():
         res = cursor.fetchone()
         conexao.close()
         
-        # Garante que leads e vendas sejam números, mesmo que o banco esteja vazio
+        # Tratamento para garantir que o dashboard nunca receba 'null'
         leads = int(res['leads']) if res and res['leads'] is not None else 0
         vendas = int(res['vendas']) if res and res['vendas'] is not None else 0
         
@@ -51,7 +52,7 @@ def buscar_metricas():
         conv = round((vendas / leads) * 100, 1)
         return {"leads": leads, "vendas": vendas, "conversao": float(conv)}
     except Exception as e:
-        print(f"Erro ao buscar: {e}")
+        print(f"Erro na busca: {e}")
         return {"leads": 0, "vendas": 0, "conversao": 0}
 
 @app.post("/salvar-metricas")
@@ -66,7 +67,6 @@ def salvar_metricas(dados: Metricas):
         conexao.close()
         return {"status": "Sucesso"}
     except Exception as e:
-        print(f"Erro ao salvar: {e}")
         return {"status": "Erro", "message": str(e)}
 
 @app.get("/predicao-15-dias")
