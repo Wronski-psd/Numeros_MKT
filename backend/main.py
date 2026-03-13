@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -8,7 +8,7 @@ import pandas as pd
 
 app = FastAPI()
 
-# Configuração de CORS: Permite que seu site na Vercel fale com este servidor
+# Configuração de CORS: Essencial para comunicação Vercel -> Render
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,14 +18,17 @@ app.add_middleware(
 )
 
 def conectar_banco():
-    # Conexão centralizada usando as credenciais da Aiven e o cofre do Render
-    return mysql.connector.connect(
-        host="mysql-1f716a77-joaquimwisnieski55-bba5.g.aivencloud.com",
-        port=23046,
-        user="avnadmin",
-        password=os.getenv("DB_PASSWORD"),
-        database="marketing_db"
-    )
+    # Conexão com Aiven usando a variável de ambiente DB_PASSWORD do Render
+    try:
+        return mysql.connector.connect(
+            host="mysql-1f716a77-joaquimwisnieski55-bba5.g.aivencloud.com",
+            port=23046,
+            user="avnadmin",
+            password=os.getenv("DB_PASSWORD"),
+            database="marketing_db"
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro de conexão ao banco: {str(e)}")
 
 class Metricas(BaseModel):
     data_registro: str
@@ -42,7 +45,6 @@ def buscar_metricas():
         res = cursor.fetchone()
         conexao.close()
         
-        # Tratamento para garantir que o dashboard nunca receba 'null'
         leads = int(res['leads']) if res and res['leads'] is not None else 0
         vendas = int(res['vendas']) if res and res['vendas'] is not None else 0
         
@@ -52,8 +54,7 @@ def buscar_metricas():
         conv = round((vendas / leads) * 100, 1)
         return {"leads": leads, "vendas": vendas, "conversao": float(conv)}
     except Exception as e:
-        print(f"Erro na busca: {e}")
-        return {"leads": 0, "vendas": 0, "conversao": 0}
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar métricas: {str(e)}")
 
 @app.post("/salvar-metricas")
 def salvar_metricas(dados: Metricas):
@@ -67,7 +68,7 @@ def salvar_metricas(dados: Metricas):
         conexao.close()
         return {"status": "Sucesso"}
     except Exception as e:
-        return {"status": "Erro", "message": str(e)}
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar dados: {str(e)}")
 
 @app.get("/predicao-15-dias")
 def calcular_predicao():
@@ -83,7 +84,7 @@ def calcular_predicao():
         vendas_est = int(df['qtd_vendas'].mean() * 15)
         return {"status": "Sucesso", "proximo_ciclo": {"leads_estimados": leads_est, "vendas_estimadas": vendas_est}}
     except Exception as e:
-        return {"status": "Erro", "proximo_ciclo": {"leads_estimados": 0, "vendas_estimadas": 0}}
+        raise HTTPException(status_code=500, detail=f"Erro no cálculo de predição: {str(e)}")
 
 @app.get("/exportar-dados")
 def exportar_dados():
@@ -95,7 +96,7 @@ def exportar_dados():
         df.to_excel(caminho, index=False)
         return FileResponse(path=caminho, filename="Relatorio_MKT.xlsx")
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=f"Erro ao exportar Excel: {str(e)}")
 
 @app.delete("/deletar-ultimo")
 def deletar_ultimo():
@@ -107,4 +108,4 @@ def deletar_ultimo():
         conexao.close()
         return {"status": "Registro removido com sucesso"}
     except Exception as e:
-        return {"status": "Erro", "message": str(e)}
+        raise HTTPException(status_code=500, detail=f"Erro ao deletar: {str(e)}")
