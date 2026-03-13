@@ -1,12 +1,10 @@
 <template>
   <div class="dashboard-elite">
-    
     <header class="header-premium">
       <h1 class="logo-text">Números MKT</h1>
     </header>
 
     <main class="bento-container">
-      
       <section class="card bento-item anim-1">
         <span class="tag-elite">VOLUMETRIA</span>
         <div class="volume-stack">
@@ -80,7 +78,6 @@
           </div>
         </div>
       </transition>
-
     </main>
 
     <footer class="footer-elite">
@@ -95,6 +92,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
+// CONFIGURAÇÃO DE AMBIENTE - Centralizada para evitar erros
+const API_URL = import.meta.env.VITE_API_URL
+
 const isAdmin = ref(false)
 const stats = ref({ leads: 0, vendas: 0, conversao: 0 })
 const predicao = ref({ leads_estimados: 0, vendas_estimadas: 0 })
@@ -102,34 +102,45 @@ const tempForm = ref({ leads: '', vendas: '' })
 
 const carregarTudo = async () => {
   try {
-    const resStats = await fetch('https://numeros-mkt.onrender.com/buscar-metricas')
+    const resStats = await fetch(`${API_URL}/buscar-metricas`)
     stats.value = await resStats.json()
-    const resPred = await fetch('https://numeros-mkt.onrender.com/predicao-15-dias')
+    
+    const resPred = await fetch(`${API_URL}/predicao-15-dias`)
     const dataPred = await resPred.json()
-    if (dataPred.status === "Sucesso") predicao.value = dataPred.proximo_ciclo
+    
+    if (dataPred.status === "Sucesso") {
+      predicao.value = dataPred.proximo_ciclo
+    }
   } catch (e) { 
-    console.error("Conexão offline") 
+    console.error("Conexão offline ou erro na API") 
   }
 }
 
-const baixarPlanilha = () => window.open('https://numeros-mkt.onrender.com/exportar-dados', '_blank')
+const baixarPlanilha = () => {
+  window.open(`${API_URL}/exportar-dados`, '_blank')
+}
 
 const deletarUltimo = async () => {
   if (!confirm("⚠️ Apagar o último registro enviado?")) return;
   try {
-    const res = await fetch('https://numeros-mkt.onrender.com/deletar-ultimo', { method: 'DELETE' });
+    const res = await fetch(`${API_URL}/deletar-ultimo`, { method: 'DELETE' });
     if (res.ok) {
-      alert("🗑️ Removido!");
+      alert("🗑️ Registro removido com sucesso!");
       carregarTudo();
     }
-  } catch (e) { alert("🚨 Erro ao deletar."); }
+  } catch (e) { 
+    alert("🚨 Erro ao tentar deletar o registro."); 
+  }
 }
 
 const enviarParaBanco = async () => {
-  if (!tempForm.value.leads || !tempForm.value.vendas) return alert("Preencha os campos!");
+  if (!tempForm.value.leads || !tempForm.value.vendas) {
+    return alert("Por favor, preencha todos os campos!");
+  }
+  
   try {
     const conv = ((tempForm.value.vendas / tempForm.value.leads) * 100).toFixed(1);
-    const res = await fetch('https://numeros-mkt.onrender.com/salvar-metricas', {
+    const res = await fetch(`${API_URL}/salvar-metricas`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -139,19 +150,23 @@ const enviarParaBanco = async () => {
         taxa_conversao: parseFloat(conv)
       })
     });
+
     if (res.ok) {
-      alert("✅ REGISTRADO!");
+      alert("✅ DADOS REGISTRADOS COM SUCESSO!");
       tempForm.value = { leads: '', vendas: '' };
       isAdmin.value = false;
       carregarTudo(); 
     }
-  } catch (e) { alert("🚨 Erro de Conexão!"); }
+  } catch (e) { 
+    alert("🚨 Erro de Conexão com o servidor!"); 
+  }
 }
 
 onMounted(carregarTudo)
 </script>
 
 <style>
+/* ... (Seu CSS permanece o mesmo, sem alterações necessárias) ... */
 :root {
   --petroleo-deep: #010a0a;
   --petroleo-card: #021414;
@@ -185,12 +200,11 @@ body { margin: 0; background-color: var(--petroleo-deep); color: var(--txt); fon
 .donut-elite { width: 220px; height: 220px; border-radius: 50%; position: relative; border: 1px solid var(--ouro-border); background: rgba(0,0,0,0.4); }
 .donut-fill { 
   position: absolute; width: 100%; height: 100%; border-radius: 50%; 
-  background: conic-gradient(var(--ouro) var(--per), transparent 0); /* VOLTOU AO OURO FIXO */
+  background: conic-gradient(var(--ouro) var(--per), transparent 0);
   transition: 1.5s ease; 
 }
 .donut-hole { position: absolute; width: 85%; height: 85%; background: var(--petroleo-card); border-radius: 50%; top: 7.5%; left: 7.5%; }
 
-/* PAINEL */
 .admin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.94); backdrop-filter: blur(30px); z-index: 9999; display: flex; align-items: center; justify-content: center; }
 .admin-modal { background: var(--petroleo-card); width: 90%; max-width: 500px; padding: 60px 40px; border-radius: 40px; border: 1px solid var(--ouro); box-shadow: 0 0 60px var(--ouro-glow); }
 .input-glass-tech { background: transparent; border: none; border-bottom: 2px solid var(--txt-dim); color: #fff; font-size: 3.5rem; font-weight: 900; width: 100%; text-align: center; outline: none; margin: 20px 0; }
