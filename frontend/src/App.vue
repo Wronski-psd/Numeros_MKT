@@ -92,8 +92,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 
-// CONFIGURAÇÃO DE AMBIENTE - Centralizada para evitar erros
-const API_URL = import.meta.env.VITE_API_URL
+// LINK DIRETO - Removido o uso de variáveis de ambiente para forçar a conexão com o Render
+const API_URL = 'https://numeros-mkt.onrender.com'
 
 const isAdmin = ref(false)
 const stats = ref({ leads: 0, vendas: 0, conversao: 0 })
@@ -112,7 +112,7 @@ const carregarTudo = async () => {
       predicao.value = dataPred.proximo_ciclo
     }
   } catch (e) { 
-    console.error("Conexão offline ou erro na API") 
+    console.error("Conexão offline ou erro na API do Render") 
   }
 }
 
@@ -158,7 +158,7 @@ const enviarParaBanco = async () => {
       carregarTudo(); 
     }
   } catch (e) { 
-    alert("🚨 Erro de Conexão com o servidor!"); 
+    alert("🚨 Erro de Conexão com o servidor do Render!"); 
   }
 }
 
@@ -166,7 +166,6 @@ onMounted(carregarTudo)
 </script>
 
 <style>
-/* ... (Seu CSS permanece o mesmo, sem alterações necessárias) ... */
 :root {
   --petroleo-deep: #010a0a;
   --petroleo-card: #021414;

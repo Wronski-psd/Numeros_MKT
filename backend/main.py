@@ -86,3 +86,5 @@ def deletar_ultimo():
     conexao.commit()
     conexao.close()
     return {"status": "Registro removido com sucesso"}
+
+#teste
