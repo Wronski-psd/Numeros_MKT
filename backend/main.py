@@ -1,3 +1,4 @@
+import os  # <-- IMPORTANTE: Adicionado para ler o cofre
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -7,7 +8,7 @@ import pandas as pd
 
 app = FastAPI()
 
-# SOLUÇÃO DO ERRO F12: Liberando o acesso para o seu site (CORS)
+# Acesso liberado para a sua Vercel (CORS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,11 +18,13 @@ app.add_middleware(
 )
 
 def conectar_banco():
+    # Conectando ao MySQL na nuvem (Aiven) usando a Variável de Ambiente (Cofre)
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="05151126", # <-- COLOQUE SUA SENHA AQUI
-        database="marketing_db"
+        host="mysql-1f716a77-joaquimwisnieski55-bba5.g.aivencloud.com",
+        port=23046,
+        user="avnadmin",
+        password=os.getenv("DB_PASSWORD"), # <-- A MÁGICA DA SEGURANÇA AQUI!
+        database="defaultdb"
     )
 
 class Metricas(BaseModel):
@@ -72,10 +75,6 @@ def exportar_dados():
     caminho = "relatorio_numeros.xlsx"
     df.to_excel(caminho, index=False)
     return FileResponse(path=caminho, filename="Relatorio_MKT.xlsx")
-
-
-
-
 
 # ROTA DE EMERGÊNCIA: Deleta o último registro inserido
 @app.delete("/deletar-ultimo")
