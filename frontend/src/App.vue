@@ -102,9 +102,9 @@ const tempForm = ref({ leads: '', vendas: '' })
 
 const carregarTudo = async () => {
   try {
-    const resStats = await fetch('http://localhost:8000/buscar-metricas')
+    const resStats = await fetch('https://numeros-mkt.onrender.com/buscar-metricas')
     stats.value = await resStats.json()
-    const resPred = await fetch('http://localhost:8000/predicao-15-dias')
+    const resPred = await fetch('https://numeros-mkt.onrender.com/predicao-15-dias')
     const dataPred = await resPred.json()
     if (dataPred.status === "Sucesso") predicao.value = dataPred.proximo_ciclo
   } catch (e) { 
@@ -112,12 +112,12 @@ const carregarTudo = async () => {
   }
 }
 
-const baixarPlanilha = () => window.open('http://localhost:8000/exportar-dados', '_blank')
+const baixarPlanilha = () => window.open('https://numeros-mkt.onrender.com/exportar-dados', '_blank')
 
 const deletarUltimo = async () => {
   if (!confirm("⚠️ Apagar o último registro enviado?")) return;
   try {
-    const res = await fetch('http://localhost:8000/deletar-ultimo', { method: 'DELETE' });
+    const res = await fetch('https://numeros-mkt.onrender.com/deletar-ultimo', { method: 'DELETE' });
     if (res.ok) {
       alert("🗑️ Removido!");
       carregarTudo();
@@ -129,7 +129,7 @@ const enviarParaBanco = async () => {
   if (!tempForm.value.leads || !tempForm.value.vendas) return alert("Preencha os campos!");
   try {
     const conv = ((tempForm.value.vendas / tempForm.value.leads) * 100).toFixed(1);
-    const res = await fetch('http://localhost:8000/salvar-metricas', {
+    const res = await fetch('https://numeros-mkt.onrender.com/salvar-metricas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
