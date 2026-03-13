@@ -1,0 +1,47 @@
+# --- PYTHON (Backend) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.lib/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+# Arquivos de dados e relatórios gerados
+*.xlsx
+*.csv
+relatorio_mkt.xlsx
+
+# --- VUE 3 / NODE (Frontend) ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+# Logs de erro do npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- IDEs / SISTEMA ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
