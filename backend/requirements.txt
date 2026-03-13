@@ -6,3 +6,5 @@ cryptography
 python-multipart
 python-dotenv
 mysql-connector-python
+pandas
+numpy
