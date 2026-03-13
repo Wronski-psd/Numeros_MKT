@@ -5,3 +5,4 @@ pymysql
 cryptography
 python-multipart
 python-dotenv
+mysql-connector-python
